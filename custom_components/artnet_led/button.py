@@ -1,6 +1,7 @@
 """DMX Trigger Button Platform for Art-Net LED Integration."""
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from homeassistant.components.button import ButtonEntity
@@ -72,7 +73,7 @@ class DmxTriggerButton(ButtonEntity):
         return self._unique_id
 
     async def async_press(self) -> None:
-        """Handle the button press - send fixed DMX values."""
+        """Handle the button press - send fixed DMX values, then reset after 1s."""
         log.debug("DMX Trigger Button '%s' pressed, sending values", self._name)
 
         # Calculate the target values (always on at full brightness for fixed)
@@ -85,3 +86,11 @@ class DmxTriggerButton(ButtonEntity):
 
         # Send the values with fade
         self._channel.set_fade(target_values, self._fade_time * 1000)
+
+        # Wait 1 second then reset to 0
+        await asyncio.sleep(1)
+
+        # Reset all channels to 0
+        reset_values = [0] * len(target_values)
+        self._channel.set_fade(reset_values, self._fade_time * 1000)
+        log.debug("DMX Trigger Button '%s' reset to 0", self._name)
